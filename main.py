@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from os.path import exists
 from tools.colors import ChangeColor
 from openpyxl import Workbook
@@ -9,41 +10,46 @@ from textwrap import dedent
 from langchain_openai import ChatOpenAI
 from tools.web_scrapper import Scrape
 
+# Start time and date
+
+
+# Load environment variables
 load_dotenv()
 openai_api = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = str(openai_api)
 
+# Initialize color changer for console messages
 change_color = ChangeColor()
 
+# Prompt user for company information
 print(change_color.make_yellow("Please provide some information about the company we will analyze:"))
 company_name = input(change_color.make_yellow(f"Please enter company name: "))
 company_website = input(change_color.make_yellow(f"Please enter the homepage of {company_name} (https://www.example.com/): "))
 print(change_color.make_green(f"Thank you! Creating necessary files and folders..."))
+
+# Set up report folder and file paths
 report_folder_path = f"companies/{company_name}"
 folder_exists = os.path.exists(report_folder_path)
 empty_file_path = f'companies/empty-report.xlsx'
+
+# Load or create the Excel workbook for the report
 wb = load_workbook(empty_file_path)
 if not folder_exists:
     os.makedirs(report_folder_path)
 
 print(change_color.make_yellow("All Done! Folders and Files ready!"))
 print(change_color.make_green(f"We are starting the analysis.,,"))
-
-
-
+started_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+print(change_color.make_yellow(f"{started_at}"))
+# Initialize the web scraper
+print(change_color.make_green(f"Scraping data from website...Be patient please, get a cup of coffee..."))
 scraper = Scrape(company_website)
 navigation_links = scraper.get_navigation_links()
 number_of_pages = len(navigation_links)
 homepage_data = scraper.get_n_hierarchy()
 menu_items = scraper.get_navigation_links()
-menu_structure = (f"Below is the menu items in order. Please not that menu structure is very difficult to determine by "
-                  f"scraping only.\n")
-menu_structure += f"Please check the actual website for better understanding the structure.\n\n"
-for url, text in menu_items:
-    if text and text[0].isalpha():
-        menu_structure += f"{text.strip()}"
-    else:
-        menu_structure +=f" {text.strip()}"
+
+# Initialize CrewAI agents for analysis
 homepage_analyzer = Agent(
             role="Company analyzer",
             goal="Analyze the given brief website information from company's homepage, write a one paragraph website "
@@ -73,6 +79,7 @@ page_analyzer = Agent(
             )
 )
 
+# Create and execute tasks for homepage and audience analysis
 website_analysis_task = Task(
             description=dedent(f"Analyze the information below in JSON format, and write a one paragraph conclusion "
                                f"about the company"
@@ -93,17 +100,17 @@ audience_analysis_task = Task(
 )
 audience_task = audience_analysis_task.execute()
 homepage_task = website_analysis_task.execute()
-
-
+print(change_color.make_green(f"Almost there..."))
+# Fill in the Excel report with analysis results
 ws1 = wb.worksheets[0]
 ws1['B2'] = f"{company_name}"
 ws1['B3'] = f"{company_website}"
 ws1['B4'] = f"{homepage_task}"
 ws1['B6'] = f"{number_of_pages} (Based on the analysis of the menu items. Actual number of pages might vary)"
 ws1['B7'] = f"{audience_task}"
-ws1['B8'] = f"{menu_structure}"
+
 ws2 = wb.worksheets[1]
-print(change_color.make_green(f"Scraping data from website...Be patient please, get a cup of coffee..."))
+
 print(f"Number of pages to be analyzed: {number_of_pages}")
 i = 1
 row = 2
@@ -139,4 +146,6 @@ for url, text in navigation_links:
     row = row + 1
 
 wb.save(f"{report_folder_path}/{company_name}-report.xlsx")
+ended_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+print(change_color.make_yellow(f"{ended_at}"))
 scraper.close()
