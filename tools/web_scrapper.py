@@ -119,7 +119,7 @@ class Scrape:
             self.driver.get(url)
             soup = BeautifulSoup(self.driver.page_source, 'html.parser')
             potential_cta_texts = set()
-            potential_cta_texts.add("Potential CTAS: \n")
+            potential_cta_texts.add("\nPotential CTAS: \n")
             # Define keywords and phrases that are commonly used in CTAs
             cta_keywords = ['buy', 'sign up', 'learn more', 'subscribe', 'register', 'start', 'join', 'get started',
                             'shop', 'order', 'download', 'try']

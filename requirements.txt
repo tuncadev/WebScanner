@@ -148,6 +148,7 @@ typing_extensions==4.11.0
 urllib3==2.2.1
 uvicorn==0.29.0
 uvloop==0.19.0
+validators==0.26.0
 watchfiles==0.21.0
 webdriver-manager==4.0.1
 webencodings==0.5.1
